@@ -297,18 +297,50 @@ function confirmSubmit() {
 
   if (!ok || rows.length === 0) return;
 
-  // 確認メッセージ
-  var lines = ['接種日：' + dateStr, '患者数：' + rows.length + '人', ''];
-  rows.forEach(function(r) {
-    lines.push('患者ID：' + r.id + (r.age ? '  年齢：' + r.age : ''));
-    var vacList = Object.keys(r.vaccines).map(function(v) { return v + ' ' + r.vaccines[v] + '回目'; });
-    if (vacList.length > 0) lines.push('  ワクチン：' + vacList.join('、'));
-    if (r.kensin) lines.push('  健診：あり');
+  var btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.innerHTML = '重複チェック中...';
+
+  fetch(apiUrl, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'checkDuplicate', rows: rows }),
+    headers: { 'Content-Type': 'text/plain' }
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    btn.disabled = false;
+    btn.innerHTML = '📋 スプレッドシートに登録する';
+
+    var lines = [];
+
+    if (data.ok && data.duplicates && data.duplicates.length > 0) {
+      data.duplicates.forEach(function(dup) {
+        lines.push('⚠️ ID ' + dup.id + ' の ' + dup.date + ' の予約がすでに登録されています');
+      });
+      lines.push('------------------------');
+    }
+
+    lines.push('接種日：' + dateStr, '患者数：' + rows.length + '人', '');
+    rows.forEach(function(r) {
+      lines.push('患者ID：' + r.id + (r.age ? '  年齢：' + r.age : ''));
+      var vacList = Object.keys(r.vaccines).map(function(v) { return v + ' ' + r.vaccines[v] + '回目'; });
+      if (vacList.length > 0) lines.push('  ワクチン：' + vacList.join('、'));
+      if (r.kensin) lines.push('  健診：あり');
+    });
+    lines.push('', '登録しますか？');
+
+    if (!window.confirm(lines.join('\n'))) return;
+
+    executeReservation(apiUrl, dateStr, rows);
+  })
+  .catch(function(err) {
+    btn.disabled = false;
+    btn.innerHTML = '📋 スプレッドシートに登録する';
+    showError('重複チェック通信エラー：' + err.message);
   });
-  lines.push('', '登録しますか？');
+}
 
-  if (!window.confirm(lines.join('\n'))) return;
-
+function executeReservation(apiUrl, dateStr, rows) {
   hideAll();
   var btn = document.getElementById('btn-submit');
   btn.disabled = true;
@@ -336,9 +368,10 @@ function confirmSubmit() {
   .catch(function(err) {
     btn.disabled = false;
     btn.innerHTML = '📋 スプレッドシートに登録する';
-    showError('通信エラー：' + err.message);
+    showError('登録通信エラー：' + err.message);
   });
 }
+
 
 function showError(msg) {
   document.getElementById('result-err').style.display = 'block';

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>75g OGTT 看護師勉強用資料 | はまこどもクリニック</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Hiragino Sans', 'Meiryo', sans-serif; background: #f5f4f0; color: #2c2c2a; line-height: 1.7; }
+  .page-wrap { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .doc-header { border-bottom: 3px solid #185FA5; padding-bottom: 1.2rem; margin-bottom: 2rem; }
+  .clinic-name { font-size: 12px; color: #5F5E5A; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .doc-title { font-size: 26px; font-weight: 500; color: #042C53; }
+  .doc-subtitle { font-size: 14px; color: #5F5E5A; margin-top: 4px; }
+
+  h2 { font-size: 15px; font-weight: 500; color: #042C53; background: #E6F1FB; border-left: 4px solid #185FA5; padding: 8px 14px; margin: 2rem 0 1rem; border-radius: 0 6px 6px 0; }
+
+  p { font-size: 14px; margin-bottom: 0.6rem; }
+
+  .card { background: #fff; border: 1px solid #D3D1C7; border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1rem; }
+
+  .premise-box { background: #EAF3DE; border: 1px solid #97C459; border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.5rem; }
+  .premise-box h3 { font-size: 13px; font-weight: 500; color: #27500A; margin-bottom: 8px; }
+  .premise-box li { font-size: 14px; color: #3B6D11; margin-bottom: 4px; }
+  .premise-box ul { padding-left: 1.4rem; }
+
+  .omit-box { background: #FAEEDA; border: 1px solid #EF9F27; border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1.5rem; }
+  .omit-box h3 { font-size: 13px; font-weight: 500; color: #633806; margin-bottom: 8px; }
+  .omit-box li { font-size: 14px; color: #633806; margin-bottom: 6px; line-height: 1.6; }
+  .omit-box ul { padding-left: 1.4rem; }
+
+  /* タイムライン */
+  .timeline-wrap { overflow-x: auto; padding-bottom: 8px; }
+  .timeline { display: flex; gap: 0; min-width: 520px; margin: 1rem 0; }
+  .tl-item { flex: 1; text-align: center; position: relative; }
+  .tl-item:not(:last-child)::after { content: ''; position: absolute; top: 21px; left: 50%; width: 100%; height: 2px; background: #B4B2A9; z-index: 0; }
+  .tl-dot { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 12px; font-weight: 500; position: relative; z-index: 1; line-height: 1.2; }
+  .tl-dot.blue   { background: #E6F1FB; color: #0C447C; border: 2px solid #378ADD; }
+  .tl-dot.orange { background: #FAEEDA; color: #633806; border: 2px solid #EF9F27; }
+  .tl-dot.green  { background: #EAF3DE; color: #27500A; border: 2px solid #639922; }
+  .tl-dot.green-dim { background: #f4faea; color: #3B6D11; border: 2px dashed #97C459; }
+  .tl-label { font-size: 13px; font-weight: 500; color: #2c2c2a; }
+  .tl-sub   { font-size: 11px; color: #5F5E5A; margin-top: 2px; line-height: 1.4; }
+  .tl-badge { display: inline-block; font-size: 10px; padding: 1px 8px; border-radius: 20px; margin-top: 5px; }
+  .tl-badge.must { background: #185FA5; color: #fff; }
+  .tl-badge.rec  { background: #639922; color: #fff; }
+
+  /* 採血項目テーブル */
+  .blood-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .blood-table th { background: #E6F1FB; color: #0C447C; font-weight: 500; padding: 8px 10px; border: 1px solid #B5D4F4; text-align: center; }
+  .blood-table td { padding: 8px 10px; border: 1px solid #D3D1C7; vertical-align: top; line-height: 1.65; }
+  .blood-table tr:nth-child(even) td { background: #fafaf8; }
+
+  .tag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 10px; margin-right: 3px; vertical-align: middle; }
+  .tag-must  { background: #185FA5; color: #fff; }
+  .tag-omit  { background: #FAEEDA; color: #854F0B; border: 1px solid #EF9F27; }
+  .tag-tube  { background: #F1EFE8; color: #444441; border: 1px solid #B4B2A9; }
+
+  .tube-label { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; margin-top: 5px; }
+  .tube-dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
+  .tube-gray   { background: #aaa; }
+  .tube-purple { background: #9b59b6; }
+  .tube-yellow { background: #f5c518; }
+
+  /* 手順ステップ */
+  .step { display: flex; gap: 14px; padding: 11px 0; border-bottom: 1px solid #e8e6e0; }
+  .step:last-child { border-bottom: none; }
+  .step-num { min-width: 26px; height: 26px; border-radius: 50%; background: #185FA5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; margin-top: 2px; }
+  .step-body { flex: 1; }
+  .step-title { font-size: 14px; font-weight: 500; color: #042C53; margin-bottom: 3px; }
+  .step-desc  { font-size: 13px; color: #444441; line-height: 1.65; }
+  .step-tip  { background: #E6F1FB; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #185FA5; margin-top: 6px; }
+  .step-warn { background: #FAEEDA; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: #854F0B; margin-top: 6px; }
+
+  /* 診断基準 */
+  .diag-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .diag-table th { background: #f5f4f0; font-weight: 500; padding: 8px 12px; border: 1px solid #D3D1C7; text-align: center; }
+  .diag-table td { padding: 8px 12px; border: 1px solid #D3D1C7; text-align: center; }
+  .badge-dm     { display: inline-block; background: #FCEBEB; color: #A32D2D; font-size: 12px; padding: 2px 10px; border-radius: 20px; }
+  .badge-border { display: inline-block; background: #FAEEDA; color: #854F0B; font-size: 12px; padding: 2px 10px; border-radius: 20px; }
+  .badge-normal { display: inline-block; background: #EAF3DE; color: #27500A; font-size: 12px; padding: 2px 10px; border-radius: 20px; }
+
+  .emergency-box { background: #FCEBEB; border: 1px solid #F09595; border-radius: 10px; padding: 1.2rem 1.4rem; }
+  .emergency-box h3 { font-size: 13px; font-weight: 500; color: #791F1F; margin-bottom: 8px; }
+  .emergency-box li { font-size: 14px; color: #A32D2D; margin-bottom: 5px; }
+  .emergency-box ul { padding-left: 1.4rem; }
+
+  .formula-box { background: #f5f4f0; border: 1px solid #D3D1C7; border-radius: 8px; padding: 10px 14px; margin-top: 8px; font-size: 13px; color: #2c2c2a; }
+  .formula-box code { font-family: monospace; background: #e0dfd8; padding: 1px 5px; border-radius: 3px; }
+
+  .footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #D3D1C7; font-size: 12px; color: #888780; text-align: right; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="doc-header">
+    <div class="clinic-name">はまこどもクリニック　看護師勉強用資料</div>
+    <div class="doc-title">75g 経口ブドウ糖負荷試験（OGTT）</div>
+    <div class="doc-subtitle">2型糖尿病疑い・高度肥満・インスリン抵抗性例における実施マニュアル（都度採血プロトコル）</div>
+  </div>
+
+  <!-- 前提条件 -->
+  <h2>この検査の対象となる患者像</h2>
+  <div class="premise-box">
+    <h3>本プロトコルが前提とする患者条件</h3>
+    <ul>
+      <li>高度肥満を主訴として初診し、スクリーニング採血（空腹時）を施行済みの患者</li>
+      <li>空腹時血糖・インスリン・HOMA-IRがすでに測定済みで、インスリン抵抗性の高値が確認されている</li>
+      <li>臨床的に2型糖尿病または耐糖能異常（境界型）が疑われる</li>
+      <li>1型糖尿病を積極的に疑う所見（やせ・ケトーシス・急激な発症など）はない</li>
+    </ul>
+    <p style="margin-top:10px; font-size:13px; color:#27500A;">→ 初診時データを活用することで、当日の採血項目を合理的に絞ることができます。</p>
+  </div>
+
+  <!-- 検査の目的 -->
+  <h2>検査の目的</h2>
+  <div class="card">
+    <p>75g OGTTは、ブドウ糖を一定量負荷したあとの血糖値の変化を測定し、<strong>耐糖能（糖を処理する能力）</strong>を評価する検査です。本症例では以下の情報を得ることが目的です。</p>
+    <ul style="padding-left:1.4rem; font-size:14px; margin-top:6px;">
+      <li>空腹時・負荷後血糖値から、糖尿病型・境界型・正常型の判定</li>
+      <li>30分インスリン値から、インスリン初期分泌能の評価（Insulinogenic Index）</li>
+      <li>120分Cペプチドから、内因性インスリン分泌の残存評価</li>
+      <li>0分の一般採血により、合併症（脂肪肝・腎障害・脂質異常・電解質異常）のスクリーニング</li>
+    </ul>
+    <div class="formula-box" style="margin-top:12px;">
+      <strong>Insulinogenic Index（インスリン初期分泌指標）</strong><br>
+      <code>( 30分IRI − 初診時空腹時IRI ) ÷ ( 30分血糖 − 0分血糖 )</code><br>
+      <span style="font-size:12px; color:#5F5E5A; margin-top:4px; display:block;">0.4未満：インスリン初期分泌低下を示唆　／　HOMA-IRは初診時測定済みのため当日の算出は不要</span>
+    </div>
+  </div>
+
+  <!-- 省略している検査 -->
+  <h2>本プロトコルで省略している検査と理由</h2>
+  <div class="omit-box">
+    <h3>省略・簡略化している項目（本来測定すべきだが、今回は省略）</h3>
+    <ul>
+      <li><strong>0分インスリン（IRI）：</strong>初診時に空腹時IRIを測定済みのため省略。Insulinogenic Indexは初診時IRIで近似計算します。</li>
+      <li><strong>HOMA-IR：</strong>初診時に測定・評価済みのため当日は再測定しません。</li>
+      <li><strong>自己抗体（GAD抗体・IA-2抗体など）：</strong>高度肥満・高HOMA-IRという典型的な2型糖尿病像であり、1型の事前確率が低いため省略。臨床像が変化した場合（著しいインスリン分泌低下・ケトーシスなど）は改めて検討します。</li>
+      <li><strong>60分のインスリン・Cペプチド：</strong>60分は血糖のみ測定。診断と初期分泌評価を優先した合理的な省略です。本来は60分値も測定することで分泌パターンをより詳細に把握できます。</li>
+    </ul>
+  </div>
+
+  <!-- タイムライン -->
+  <h2>検査の流れ</h2>
+  <div class="timeline-wrap">
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot blue">0分</div>
+        <div class="tl-label">空腹時採血</div>
+        <div class="tl-sub">血糖・CPR<br>一般採血</div>
+        <div><span class="tl-badge must">必須</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot orange">服用</div>
+        <div class="tl-label">ブドウ糖液</div>
+        <div class="tl-sub">75g / 5分以内</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green">30分</div>
+        <div class="tl-label">採血①</div>
+        <div class="tl-sub">血糖・IRI</div>
+        <div><span class="tl-badge must">必須</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green-dim">60分</div>
+        <div class="tl-label">採血②</div>
+        <div class="tl-sub">血糖のみ</div>
+        <div><span class="tl-badge rec">推奨</span></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot green">120分</div>
+        <div class="tl-label">採血③</div>
+        <div class="tl-sub">血糖・IRI・CPR</div>
+        <div><span class="tl-badge must">必須</span></div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:12px; color:#5F5E5A;">※ 60分は推奨ですが、患者の状態・採血困難な場合は医師に確認のうえ省略可能です。</p>
+
+  <!-- 採血項目一覧 -->
+  <h2>各ポイントの採血項目と採血管</h2>
+  <div class="card">
+    <table class="blood-table">
+      <thead>
+        <tr>
+          <th style="width:8%">時点</th>
+          <th style="width:44%">採血項目</th>
+          <th style="width:28%">採血管（スピッツ）</th>
+          <th style="width:20%">備考</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="text-align:center; font-weight:500; color:#0C447C;">0分</td>
+          <td>
+            <span class="tag tag-must">必須</span><strong>血糖</strong><br>
+            <span class="tag tag-must">必須</span><strong>Cペプチド（CPR）</strong><br>
+            <span class="tag tag-must">必須</span><strong>一般末梢血（CBC）</strong><br>
+            <span class="tag tag-must">必須</span>生化学ルーチン：<br>
+            <span style="font-size:12px; padding-left:1em; color:#444441; line-height:1.9;">
+              肝機能（AST・ALT・γGTP）<br>
+              腎機能（BUN・Cr）<br>
+              脂質（TG・LDL・HDL）<br>
+              尿酸・CRP・Na・K・Cl
+            </span>
+            <div style="margin-top:6px;"><span class="tag tag-omit">省略</span>インスリン（初診時測定済）</div>
+            <div><span class="tag tag-omit">省略</span>自己抗体（臨床的に不要）</div>
+          </td>
+          <td>
+            <div class="tube-label"><span class="tube-dot tube-gray"></span>血糖用（灰キャップ）× 1</div>
+            <div class="tube-label"><span class="tube-dot tube-purple"></span>EDTA管（紫キャップ）× 1　CBC用</div>
+            <div class="tube-label"><span class="tube-dot tube-yellow"></span>生化学管（黄/橙キャップ）× 1　CPR・ルーチン共用</div>
+          </td>
+          <td style="font-size:12px; color:#5F5E5A;">採血直後にブドウ糖液を渡す</td>
+        </tr>
+        <tr>
+          <td style="text-align:center; font-weight:500; color:#27500A;">30分</td>
+          <td>
+            <span class="tag tag-must">必須</span><strong>血糖</strong><br>
+            <span class="tag tag-must">必須</span><strong>インスリン（IRI）</strong>
+          </td>
+          <td>
+            <div class="tube-label"><span class="tube-dot tube-gray"></span>血糖用（灰キャップ）× 1</div>
+            <div class="tube-label"><span class="tube-dot tube-yellow"></span>生化学管（黄/橙キャップ）× 1　IRI用</div>
+          </td>
+          <td style="font-size:12px; color:#5F5E5A;">Insulinogenic Index算出に必須</td>
+        </tr>
+        <tr>
+          <td style="text-align:center; font-weight:500; color:#3B6D11;">60分</td>
+          <td>
+            <span class="tag tag-must">必須</span><strong>血糖</strong><br>
+            <span class="tag tag-omit">省略</span>インスリン・CPR
+          </td>
+          <td>
+            <div class="tube-label"><span class="tube-dot tube-gray"></span>血糖用（灰キャップ）× 1</div>
+          </td>
+          <td style="font-size:12px; color:#5F5E5A;">血糖推移の確認が目的</td>
+        </tr>
+        <tr>
+          <td style="text-align:center; font-weight:500; color:#27500A;">120分</td>
+          <td>
+            <span class="tag tag-must">必須</span><strong>血糖</strong><br>
+            <span class="tag tag-must">必須</span><strong>インスリン（IRI）</strong><br>
+            <span class="tag tag-must">必須</span><strong>Cペプチド（CPR）</strong>
+          </td>
+          <td>
+            <div class="tube-label"><span class="tube-dot tube-gray"></span>血糖用（灰キャップ）× 1</div>
+            <div class="tube-label"><span class="tube-dot tube-yellow"></span>生化学管（黄/橙キャップ）× 1　IRI・CPR共用</div>
+          </td>
+          <td style="font-size:12px; color:#5F5E5A;">診断基準の根拠となる最重要ポイント</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px; color:#5F5E5A; margin-top:10px;">CPR・インスリン（IRI）はいずれも生化学管（黄/橙キャップ）で採取します。</p>
+  </div>
+
+  <!-- 採血方法 -->
+  <h2>採血方法（都度採血）</h2>
+  <div class="card">
+    <p style="font-size:13px; color:#444441; margin-bottom:12px;">本症例は高度肥満のため末梢ルート確保は行わず、都度採血で実施します。検査精度に影響はありません。</p>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">採血部位を左右交互に使用する</div>
+        <div class="step-desc">0分→左、30分→右、60分→左、120分→右を目安とし、同部位への連続穿刺を避けます。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">翼状針（23〜25G）を使用する</div>
+        <div class="step-desc">肥満例では血管視認が困難なため、翼状針を使用し確実に穿刺します。細い針ほど患者の苦痛が軽減されます。</div>
+        <div class="step-tip">採血困難な場合は無理をせず、速やかに医師に報告してください。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">採血管の順序を守る</div>
+        <div class="step-desc">血液凝固への影響を避けるため、採取順は一般的に「血糖用（灰）→ 生化学管（黄/橙）→ EDTA管（紫）」の順が推奨されます（0分のみEDTA管あり）。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 当日手順 -->
+  <h2>当日の手順（詳細）</h2>
+  <div class="card">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">来院時の確認</div>
+        <div class="step-desc">絶食確認（前夜21時以降絶食、水・お茶のみ可）／体重測定／バイタルサイン測定。</div>
+        <div class="step-warn">絶食8時間未満の場合は検査延期を医師に確認してください。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">0分採血（左腕）</div>
+        <div class="step-desc">血糖用（灰）× 1、EDTA管（紫）× 1、生化学管（黄/橙）× 1 を採取。採血直後にブドウ糖液（トレーランG 75g）を渡す。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">ブドウ糖液の服用（時刻を記録）</div>
+        <div class="step-desc">「今から飲み始めてください」と声かけし、飲み始めた時刻を記録。5分以内に飲み終えるよう促し、飲み終えた時刻も記録する。</div>
+        <div class="step-warn">飲み始めの時刻を起点として 30・60・120分をカウントします。タイマーを必ずセットしてください。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">待機中の患者対応</div>
+        <div class="step-desc">安静を保つよう説明（座位・読書・動画視聴は可、歩き回り・激しい運動は不可）。気分不良・冷汗・ふるえがあれば即時報告するよう伝える。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <div class="step-title">30分採血（右腕）</div>
+        <div class="step-desc">血糖用（灰）× 1、生化学管（黄/橙）× 1 を採取。採血後に気分不良の確認。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <div class="step-title">60分採血（左腕）</div>
+        <div class="step-desc">血糖用（灰）× 1 のみ採取。気分不良がないか声かけ。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-body">
+        <div class="step-title">120分採血（右腕）</div>
+        <div class="step-desc">血糖用（灰）× 1、生化学管（黄/橙）× 1 を採取。採血終了後、医師に報告し患者に検査完了を伝える。</div>
+        <div class="step-tip">終了後は軽食をとって良いことを患者・保護者に伝える。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 診断基準 -->
+  <h2>診断基準（参考）</h2>
+  <div class="card">
+    <table class="diag-table">
+      <thead>
+        <tr><th>判定</th><th>空腹時血糖</th><th>120分血糖</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="badge-dm">糖尿病型</span></td><td>≥ 126 mg/dL</td><td>≥ 200 mg/dL</td></tr>
+        <tr><td><span class="badge-border">境界型</span></td><td>110〜125 mg/dL</td><td>140〜199 mg/dL</td></tr>
+        <tr><td><span class="badge-normal">正常型</span></td><td>&lt; 110 mg/dL</td><td>&lt; 140 mg/dL</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px; color:#5F5E5A; margin-top:10px;">いずれか一方が糖尿病型の場合、別日の再検査またはHbA1c・症状での確認が必要です。最終判断は医師が行います。</p>
+  </div>
+
+  <!-- 緊急対応 -->
+  <h2>低血糖時の緊急対応</h2>
+  <div class="emergency-box">
+    <h3>症状：冷汗・顔面蒼白・ふるえ・頭痛・意識変容</h3>
+    <ul>
+      <li>検査を直ちに中断し、医師へ報告する</li>
+      <li>簡易血糖測定を行う</li>
+      <li>意識がある場合：ブドウ糖またはジュース（100〜150mL）を投与</li>
+      <li>意識がない・改善しない場合：医師の指示に従う</li>
+      <li>症状出現時刻・対応内容・その後の経過を記録に残す</li>
+    </ul>
+  </div>
+
+  <div class="footer">はまこどもクリニック　75g OGTT 看護師勉強用資料</div>
+</div>
+</body>
+</html>
