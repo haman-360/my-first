@@ -648,23 +648,28 @@ function showQR(){
   const text=buildPatientText();
   const wrap=document.getElementById('qr-canvas-wrap');
   wrap.innerHTML='';
-  const canvas=document.createElement('canvas');
-  wrap.appendChild(canvas);
-  // Use qrcodejs via CDN
-  if(typeof QRCode!=='undefined'){
-    new QRCode(wrap,{text,width:220,height:220,colorDark:'#0f6e56',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
-    wrap.querySelector('img') && (wrap.querySelector('img').style.display='none');
-  } else {
-    wrap.innerHTML='<p style="font-size:12px;color:var(--text2);padding:8px;">QRライブラリ読み込み中...</p>';
-    const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    s.onload=()=>{
-      wrap.innerHTML='';
-      new QRCode(wrap,{text,width:220,height:220,colorDark:'#0f6e56',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
-    };
-    document.head.appendChild(s);
-  }
   document.getElementById('qr-area').style.display='block';
+
+  // Encode text as UTF-8 bytes then to percent-encoding for data URI
+  // Use QR via a free API that returns an image (no JS library needed)
+  const encoded=encodeURIComponent(text);
+  // Use Google Charts QR API (works offline-ish via HTTPS, no key needed)
+  const size=220;
+  const url=`https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encoded}&choe=UTF-8&chld=M|1`;
+  const img=document.createElement('img');
+  img.width=size; img.height=size;
+  img.alt='QRコード';
+  img.style.display='block';
+  img.onerror=()=>{
+    // fallback: show text to copy manually
+    wrap.innerHTML=`<div style="padding:12px;max-width:260px;">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">QR生成にはインターネット接続が必要です。<br>以下のテキストをコピーしてお渡しください。</p>
+      <textarea style="width:100%;height:160px;font-size:12px;line-height:1.7;padding:8px;border:1px solid var(--border);border-radius:6px;resize:none;" readonly>${text}</textarea>
+      <button class="btn btn-green btn-sm" style="margin-top:8px;" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.querySelector('#qr-canvas-wrap textarea').value)">コピー</button>
+    </div>`;
+  };
+  img.src=url;
+  wrap.appendChild(img);
 }
 
 function printPatient(){
