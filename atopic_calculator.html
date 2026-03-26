@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>アトピー軟膏処方量計算</title>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e0ddd4;
+    --border2: #c8c4b8;
+    --text: #1a1916;
+    --text2: #6b6760;
+    --text3: #9b9890;
+    --green: #1d9e75;
+    --green-bg: #e1f5ee;
+    --green-text: #085041;
+    --amber: #b87515;
+    --amber-bg: #faeeda;
+    --amber-text: #633806;
+    --red: #c0392b;
+    --red-bg: #fcebeb;
+    --red-text: #501313;
+    --teal: #0f6e56;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  header h1 { font-size: 16px; font-weight: 600; color: var(--text); flex: 1; }
+  header .subtitle { font-size: 12px; color: var(--text2); font-weight: 400; }
+  .main { max-width: 900px; margin: 0 auto; padding: 16px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon {
+    width: 22px; height: 22px;
+    background: var(--green-bg);
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+  .grid { display: grid; gap: 10px; }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 600px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: 5px;
+    letter-spacing: 0.02em;
+  }
+  input[type=text], input[type=number], input[type=date], select {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--green); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6760' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+
+  .drug-block {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 12px;
+    background: var(--surface2);
+    position: relative;
+  }
+  .drug-block-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .drug-num {
+    width: 24px; height: 24px;
+    background: var(--teal);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .drug-block-header select {
+    flex: 1;
+    font-weight: 600;
+    background-color: var(--surface);
+  }
+  .drug-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text2);
+    margin: 10px 0;
+    line-height: 1.9;
+  }
+  .drug-summary strong { color: var(--text); font-weight: 600; }
+  .section-sub {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 12px 0 7px;
+  }
+  .part-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: 6px;
+  }
+  .part-chip {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    background: var(--surface);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .part-chip.on { border-color: var(--green); background: var(--green-bg); color: var(--green-text); }
+  .part-chip input[type=checkbox] { width: 14px; height: 14px; accent-color: var(--green); flex-shrink: 0; }
+  .sides-wrap { display: flex; gap: 3px; margin-left: auto; }
+  .sides-btn {
+    font-size: 10px; padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    cursor: pointer;
+    color: var(--text2);
+    font-family: inherit;
+  }
+  .sides-btn.on { background: var(--green); color: white; border-color: var(--green); }
+
+  .freq-row { display: flex; gap: 8px; margin-top: 10px; }
+  .freq-row > div { flex: 1; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-ghost { background: var(--surface); border: 1px solid var(--border); color: var(--text2); }
+  .btn-ghost:hover { background: var(--surface2); }
+  .btn-green { background: var(--green); color: white; }
+  .btn-green:hover { background: var(--teal); }
+  .btn-danger { background: transparent; border: none; color: var(--red); font-size: 12px; padding: 4px 8px; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+  .result-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .result-table th {
+    font-size: 11px; font-weight: 600; color: var(--text2);
+    padding: 7px 10px; border-bottom: 2px solid var(--border);
+    text-align: left; white-space: nowrap;
+  }
+  .result-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .result-table tr:last-child td { border-bottom: none; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .badge-ok { background: var(--green-bg); color: var(--green-text); }
+  .badge-warn { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-low { background: var(--red-bg); color: var(--red-text); }
+  .ftu-tag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 10px; background: var(--green-bg); color: var(--green-text); margin: 1px 2px 1px 0; }
+  .calc-eq { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .bar-wrap { width: 56px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .bar-fill { height: 100%; border-radius: 3px; }
+  .big-g { font-size: 17px; font-weight: 700; color: var(--text); }
+
+  .rx-box {
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .rx-head { background: var(--surface2); padding: 9px 14px; font-size: 12px; font-weight: 600; color: var(--text2); }
+  .rx-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 10px 14px; border-top: 1px solid var(--border); gap: 8px;
+  }
+  .rx-row .name { flex: 1; font-size: 13px; }
+  .rx-row .detail { font-size: 11px; color: var(--text3); text-align: right; line-height: 1.7; }
+  .rx-row .gval { font-size: 18px; font-weight: 700; white-space: nowrap; color: var(--teal); }
+
+  .text-out-area {
+    width: 100%;
+    min-height: 160px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Hiragino Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.85;
+    background: var(--surface2);
+    color: var(--text);
+    resize: vertical;
+  }
+  .copy-notice {
+    display: none;
+    background: var(--green-bg);
+    color: var(--green-text);
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+  }
+  .copy-notice.show { display: block; }
+
+  .tabs { display: flex; gap: 2px; background: var(--surface2); border-radius: var(--radius-sm); padding: 3px; margin-bottom: 14px; }
+  .tab-btn {
+    flex: 1; padding: 8px; font-size: 13px; font-family: inherit;
+    border: none; border-radius: var(--radius-sm); background: transparent;
+    color: var(--text2); cursor: pointer; font-weight: 500;
+  }
+  .tab-btn.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  .info-row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text2); }
+  .info-row strong { color: var(--text); }
+
+  @media (max-width: 480px) {
+    .main { padding: 10px; }
+    .card { padding: 14px; }
+    .grid-4 { grid-template-columns: 1fr 1fr; }
+    header { padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>アトピー軟膏 処方量計算</h1>
+    <div class="subtitle">はまこどもクリニック</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- 受診情報 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span>受診情報</div>
+    <div class="grid grid-4" style="margin-bottom:10px;">
+      <div>
+        <label>患者 ID</label>
+        <input type="text" id="patientId" maxlength="5" pattern="[0-9]*" inputmode="numeric" placeholder="00000">
+      </div>
+      <div>
+        <label>前回受診日</label>
+        <input type="date" id="lastDate" oninput="calc()">
+      </div>
+      <div>
+        <label>今回受診日</label>
+        <input type="date" id="todayDate" oninput="calc()">
+      </div>
+      <div>
+        <label>次回まで（日）</label>
+        <input type="number" id="nextDays" value="28" min="1" max="90" oninput="calc()">
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div>
+        <label>年齢グループ</label>
+        <select id="globalAge" onchange="calc()">
+          <option value="infant" selected>3〜11か月</option>
+          <option value="child1">1〜2歳</option>
+          <option value="child3">3〜4歳</option>
+          <option value="child5">5〜9歳</option>
+          <option value="child10">10〜15歳</option>
+          <option value="adult">成人</option>
+        </select>
+      </div>
+      <div id="visit-info-display" style="display:flex; align-items:flex-end; padding-bottom:2px;">
+        <span class="info-row" id="elapsed-label" style="font-size:13px; color:var(--text2);">受診日を入力してください</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 処方薬剤 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">💊</span>処方薬剤</div>
+    <div id="drug-list"></div>
+    <button class="btn btn-ghost btn-sm" onclick="addDrug()" style="margin-top:4px;">＋ 薬剤を追加</button>
+  </div>
+
+  <!-- 結果タブ -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn on" onclick="switchTab('result',this)">処方量計算結果</button>
+      <button class="tab-btn" onclick="switchTab('text',this)">テキスト出力</button>
+    </div>
+    <div id="panel-result">
+      <div id="calc-area"><p style="font-size:13px;color:var(--text2);">上の項目を入力すると結果が表示されます。</p></div>
+    </div>
+    <div id="panel-text" style="display:none;">
+      <p style="font-size:12px; color:var(--text2); margin-bottom:10px;">下のテキストをコピーして電子カルテに貼り付けてください。</p>
+      <textarea id="text-output" class="text-out-area" readonly></textarea>
+      <div style="display:flex; gap:10px; margin-top:10px; align-items:center;">
+        <button class="btn btn-green" onclick="copyText()">📋 テキストをコピー</button>
+        <div id="copy-notice" class="copy-notice">コピーしました！</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PRESETS = [
+  { name:"モイゼルト軟膏 28g",               tubeg:28, gPerFTU:0.4, custom:false },
+  { name:"コレクチム軟膏 5g",                tubeg:5,  gPerFTU:0.3, custom:false },
+  { name:"ブイタマークリーム 15g",            tubeg:15, gPerFTU:0.5, custom:false },
+  { name:"プロトピック軟膏 5g",              tubeg:5,  gPerFTU:0.5, custom:false },
+  { name:"プロトピック軟膏 10g",             tubeg:10, gPerFTU:0.5, custom:false },
+  { name:"ロコイド軟膏 10g",                 tubeg:10, gPerFTU:0.5, custom:false },
+  { name:"ベタメタゾン軟膏 10g",             tubeg:10, gPerFTU:0.5, custom:false },
+  { name:"ベタメタゾンクリーム 30g",         tubeg:30, gPerFTU:0.5, custom:false },
+  { name:"アンテベート軟膏 5g",              tubeg:5,  gPerFTU:0.5, custom:false },
+  { name:"ロコイド/ヘパリン混合軟膏 10g",    tubeg:10, gPerFTU:0.5, custom:false },
+  { name:"ベタメタゾン/ヘパリン混合軟膏 10g",tubeg:10, gPerFTU:0.5, custom:false },
+  { name:"その他（手入力）",                 tubeg:10, gPerFTU:0.5, custom:true  },
+];
+
+const FREQS = [
+  { label:"1日2回",   val:2 },
+  { label:"1日1回",   val:1 },
+  { label:"2日に1回", val:0.5 },
+  { label:"週3回",    val:3/7 },
+  { label:"週2回",    val:2/7 },
+  { label:"週1回",    val:1/7 },
+];
+
+const FTU_AGE = {
+  adult:  { face:2.5, arm:3,   hand:2,    trunk_f:7,   trunk_b:7,   leg:6,   foot:3.5 },
+  child10:{ face:2.5, arm:2.5, hand:1.75, trunk_f:5,   trunk_b:5,   leg:4.5, foot:3   },
+  child5: { face:1.5, arm:1.5, hand:1.25, trunk_f:3,   trunk_b:3,   leg:3,   foot:2   },
+  child3: { face:1.5, arm:1.5, hand:1,    trunk_f:2.5, trunk_b:2.5, leg:2,   foot:1.5 },
+  child1: { face:1.5, arm:1.5, hand:1,    trunk_f:2,   trunk_b:2,   leg:1.5, foot:1.5 },
+  infant: { face:1,   arm:1,   hand:0.75, trunk_f:1.5, trunk_b:1.5, leg:1.5, foot:1   },
+};
+
+const PARTS = [
+  { key:"face",    label:"顔・首",   bilateral:false },
+  { key:"trunk_f", label:"体幹前面", bilateral:false },
+  { key:"trunk_b", label:"体幹後面", bilateral:false },
+  { key:"arm",     label:"上肢",     bilateral:true  },
+  { key:"hand",    label:"手",       bilateral:true  },
+  { key:"leg",     label:"下肢",     bilateral:true  },
+  { key:"foot",    label:"足",       bilateral:true  },
+];
+
+function newDrug(pi=0) {
+  const parts = {};
+  PARTS.forEach(p => { parts[p.key] = { checked:false, sides:2 }; });
+  return { preset:pi, tubeg:PRESETS[pi].tubeg, customName:"", givenG:PRESETS[pi].tubeg*4, remainBottles:0, freqIdx:0, parts };
+}
+
+const drugs = [ newDrug(0) ];
+drugs[0].givenG = 224; drugs[0].remainBottles = 1.5;
+
+function getDrugName(d) {
+  return PRESETS[d.preset].custom ? (d.customName || '（薬剤名未入力）') : PRESETS[d.preset].name;
+}
+
+function renderDrugs() {
+  const el = document.getElementById('drug-list');
+  el.innerHTML = '';
+  drugs.forEach((d, i) => {
+    const p = PRESETS[d.preset];
+    const opts = PRESETS.map((pr,pi) => `<option value="${pi}"${pi===d.preset?' selected':''}>${pr.name}</option>`).join('');
+    const freqOpts = FREQS.map((f,fi) => `<option value="${fi}"${fi===d.freqIdx?' selected':''}>${f.label}</option>`).join('');
+    const remainG = +(d.remainBottles * d.tubeg).toFixed(2);
+    const consumed = Math.max(0, d.givenG - remainG).toFixed(1);
+    const givenB = d.tubeg > 0 ? (d.givenG/d.tubeg).toFixed(1) : '—';
+
+    let partsHtml = '';
+    PARTS.forEach(pt => {
+      const st = d.parts[pt.key];
+      const on = st.checked;
+      const sidesHtml = pt.bilateral && on
+        ? `<div class="sides-wrap" onclick="event.stopPropagation()">
+            <button class="sides-btn${st.sides===1?' on':''}" onclick="setSides(${i},'${pt.key}',1)">片</button>
+            <button class="sides-btn${st.sides===2?' on':''}" onclick="setSides(${i},'${pt.key}',2)">両</button>
+           </div>` : '';
+      partsHtml += `<div class="part-chip${on?' on':''}" onclick="togglePart(${i},'${pt.key}')">
+        <input type="checkbox"${on?' checked':''} onclick="event.stopPropagation();togglePart(${i},'${pt.key}')">
+        <span style="flex:1">${pt.label}</span>${sidesHtml}
+      </div>`;
+    });
+
+    el.innerHTML += `<div class="drug-block">
+      <div class="drug-block-header">
+        <div class="drug-num">${i+1}</div>
+        <select onchange="onPresetChange(${i},this.value)" style="flex:1;font-weight:600;">${opts}</select>
+        <button class="btn btn-danger" onclick="removeDrug(${i})">削除</button>
+      </div>
+      ${p.custom ? `<div style="margin-bottom:10px;"><label>薬剤名（手入力）</label>
+        <input type="text" value="${d.customName}" placeholder="例: ○○軟膏 10g" oninput="drugs[${i}].customName=this.value;calc()"></div>` : ''}
+      <div class="grid grid-3" style="margin-bottom:0;">
+        <div><label>1本の内容量 (g)</label>
+          <input type="number" value="${d.tubeg}" min="1" step="1" inputmode="decimal"
+            oninput="drugs[${i}].tubeg=parseFloat(this.value)||0;calc()"></div>
+        <div><label>前回処方量 (g)</label>
+          <input type="number" value="${d.givenG}" min="0" step="1" inputmode="decimal"
+            oninput="drugs[${i}].givenG=parseFloat(this.value)||0;calc()"></div>
+        <div><label>現在の残量 (本)</label>
+          <input type="number" value="${d.remainBottles}" min="0" step="0.1" inputmode="decimal"
+            oninput="drugs[${i}].remainBottles=parseFloat(this.value)||0;calc()"></div>
+      </div>
+      <div class="drug-summary">
+        前回処方: <strong>${d.givenG}g</strong>（${givenB}本）　
+        残量: <strong>${remainG.toFixed(1)}g</strong>（${d.remainBottles}本）　
+        消費: <strong>${consumed}g</strong>
+      </div>
+      <div class="section-sub">塗布部位</div>
+      <div class="part-grid">${partsHtml}</div>
+      <div class="freq-row">
+        <div><label>塗布頻度</label>
+          <select onchange="drugs[${i}].freqIdx=parseInt(this.value);calc()">${freqOpts}</select></div>
+      </div>
+    </div>`;
+  });
+}
+
+function onPresetChange(i,pi) {
+  pi=parseInt(pi);
+  drugs[i].preset=pi; drugs[i].tubeg=PRESETS[pi].tubeg; drugs[i].customName="";
+  renderDrugs(); calc();
+}
+function togglePart(i,key) { drugs[i].parts[key].checked=!drugs[i].parts[key].checked; renderDrugs(); calc(); }
+function setSides(i,key,n) { drugs[i].parts[key].sides=n; renderDrugs(); calc(); }
+function addDrug() { drugs.push(newDrug(0)); renderDrugs(); calc(); }
+function removeDrug(i) { drugs.splice(i,1); renderDrugs(); calc(); }
+
+function calcFTU(d, ageKey) {
+  const ftuData = FTU_AGE[ageKey];
+  const gPerFTU = PRESETS[d.preset].gPerFTU;
+  const freq = FREQS[d.freqIdx].val;
+  const nextDays = parseInt(document.getElementById('nextDays').value)||28;
+  let totalFTU = 0;
+  PARTS.forEach(p => {
+    const st = d.parts[p.key];
+    if (!st.checked) return;
+    totalFTU += ftuData[p.key] * (p.bilateral ? st.sides : 1);
+  });
+  return totalFTU * gPerFTU * freq * nextDays;
+}
+
+function getElapsed() {
+  const last = document.getElementById('lastDate').value;
+  const today = document.getElementById('todayDate').value;
+  if (!last || !today) return null;
+  return Math.round((new Date(today) - new Date(last)) / 86400000);
+}
+
+function calc() {
+  const days = getElapsed();
+  const nextDays = parseInt(document.getElementById('nextDays').value)||28;
+  const ageKey = document.getElementById('globalAge').value;
+  const area = document.getElementById('calc-area');
+
+  const elLabel = document.getElementById('elapsed-label');
+  if (days === null) {
+    elLabel.innerHTML = '受診日を入力してください';
+  } else if (days <= 0) {
+    elLabel.innerHTML = '<span style="color:var(--red)">日付を確認してください</span>';
+  } else {
+    elLabel.innerHTML = `経過: <strong>${days}日間</strong> ／ 次回まで: <strong>${nextDays}日</strong>`;
+  }
+
+  if (!days || days <= 0) { area.innerHTML = '<p style="font-size:13px;color:var(--text2);">受診日を入力してください。</p>'; return; }
+
+  const rxItems = [];
+  let tableHtml = `<div style="overflow-x:auto;"><table class="result-table">
+  <tr><th>薬剤</th><th>1日消費</th><th>塗布部位・FTU</th><th>次回必要量</th><th>残量</th><th>今回処方量</th><th>使用率</th></tr>`;
+
+  drugs.forEach(d => {
+    const pname = getDrugName(d);
+    const remainG = +(d.remainBottles * d.tubeg).toFixed(2);
+    const consumedG = d.givenG - remainG;
+    if (consumedG < 0) {
+      tableHtml += `<tr><td><strong>${pname}</strong></td><td colspan="6"><span class="badge badge-warn">残量が処方量を超えています</span></td></tr>`;
+      return;
+    }
+    const perDayG = consumedG / days;
+    const ftuG = calcFTU(d, ageKey);
+    const hasFTU = PARTS.some(p => d.parts[p.key].checked);
+    const neededG = hasFTU ? ftuG : perDayG * nextDays;
+    const prescribeG = Math.max(0, Math.ceil(neededG - remainG));
+    const prescribeB = d.tubeg > 0 ? (prescribeG/d.tubeg).toFixed(1) : '—';
+    const neededB = d.tubeg > 0 ? (neededG/d.tubeg).toFixed(1) : '—';
+    const useRate = d.givenG > 0 ? Math.round(consumedG/d.givenG*100) : 0;
+    const barColor = useRate>90?'#1d9e75':useRate>50?'#b87515':'#c0392b';
+    const badge = useRate>90?'<span class="badge badge-ok">よく使用</span>':useRate>50?'<span class="badge badge-warn">中程度</span>':'<span class="badge badge-low">使用少</span>';
+    const partTags = PARTS.filter(p=>d.parts[p.key].checked).map(p=>{
+      const s=p.bilateral?(d.parts[p.key].sides===2?'両':'片'):'';
+      return `<span class="ftu-tag">${p.label}${s?`(${s})`:''}</span>`;
+    }).join('');
+    const ftuCell = hasFTU
+      ? `<div>${partTags}</div><div style="font-size:11px;color:var(--text3);margin-top:3px;">${FREQS[d.freqIdx].label} → ${ftuG.toFixed(1)}g</div>`
+      : `<span style="font-size:11px;color:var(--text3);">部位未設定<br>消費ペース</span>`;
+
+    tableHtml += `<tr>
+      <td style="font-weight:600;font-size:12px;">${pname}</td>
+      <td>${perDayG.toFixed(2)}g/日</td>
+      <td>${ftuCell}</td>
+      <td>${neededG.toFixed(1)}g<br><span style="font-size:11px;color:var(--text3);">${neededB}本</span></td>
+      <td>${remainG.toFixed(1)}g<br><span style="font-size:11px;color:var(--text3);">${d.remainBottles}本</span></td>
+      <td><span class="big-g">${prescribeG}g</span>
+          <span style="font-size:11px;color:var(--text3);"> (${prescribeB}本)</span>
+          <div class="calc-eq">${neededG.toFixed(1)}g − ${remainG.toFixed(1)}g残</div>
+      </td>
+      <td>${badge}<div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(useRate,100)}%;background:${barColor};"></div></div>
+          <span style="font-size:11px;color:var(--text3);">${useRate}%</span></td>
+    </tr>`;
+    rxItems.push({ name:pname, g:prescribeG, bottles:prescribeB, needed:neededG, remain:remainG, perDay:perDayG, freq:FREQS[d.freqIdx].label, ftuG, hasFTU, givenG:d.givenG, remainBottles:d.remainBottles, tubeg:d.tubeg });
+  });
+
+  tableHtml += '</table></div>';
+
+  let rxHtml = '';
+  if (rxItems.length) {
+    rxHtml = `<div class="rx-box"><div class="rx-head">処方箋記載イメージ　（次回${nextDays}日分）</div>`;
+    rxItems.forEach(r => {
+      rxHtml += `<div class="rx-row">
+        <div class="name">${r.name}</div>
+        <div class="detail">必要 ${r.needed.toFixed(1)}g − 残 ${r.remain.toFixed(1)}g</div>
+        <div class="gval">${r.g}g</div>
+      </div>`;
+    });
+    rxHtml += '</div>';
+  }
+
+  area.innerHTML = tableHtml + rxHtml;
+
+  // テキスト出力生成
+  const pid = document.getElementById('patientId').value || '未入力';
+  const todayStr = document.getElementById('todayDate').value || '';
+  let txt = `【アトピー性皮膚炎 軟膏処方記録】\n`;
+  txt += `患者ID: ${pid}　受診日: ${todayStr}　経過: ${days}日間　次回: ${nextDays}日後\n`;
+  txt += `${'─'.repeat(36)}\n`;
+  rxItems.forEach(r => {
+    const partNames = PARTS.filter(p=>{
+      const d = drugs.find(dr=>getDrugName(dr)===r.name);
+      return d && d.parts[p.key].checked;
+    }).map(p=>{
+      const d = drugs.find(dr=>getDrugName(dr)===r.name);
+      const s = p.bilateral?(d.parts[p.key].sides===2?'両側':'片側'):'';
+      return p.label + (s?`(${s})`:'');
+    });
+    txt += `\n【${r.name}】\n`;
+    txt += `前回${r.givenG}g処方し、残量${r.remain.toFixed(1)}g（消費: ${(r.givenG-r.remain).toFixed(1)}g/${days}日 = ${r.perDay.toFixed(1)}g/日）。\n`;
+    if (r.hasFTU) {
+      txt += `塗布部位: ${partNames.join('、')}。\n`;
+      txt += `次回${nextDays}日後再診のため、${r.freq} (${r.ftuG.toFixed(1)}g) 必要。\n`;
+    } else {
+      txt += `（部位未設定 → 消費ペースから算出）次回${nextDays}日で ${r.needed.toFixed(1)}g 必要。\n`;
+    }
+    txt += `そこで、${r.needed.toFixed(1)}g − ${r.remain.toFixed(1)}g (残) = ${r.g}g と計算し、今回 ${r.g}g を処方。\n`;
+  });
+  document.getElementById('text-output').value = txt;
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('panel-result').style.display = id==='result'?'block':'none';
+  document.getElementById('panel-text').style.display   = id==='text'?'block':'none';
+}
+
+function copyText() {
+  const ta = document.getElementById('text-output');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(ta.value).then(showCopied);
+  } else {
+    ta.select(); document.execCommand('copy'); showCopied();
+  }
+}
+
+function showCopied() {
+  const n = document.getElementById('copy-notice');
+  n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'), 2500);
+}
+
+function initDates() {
+  const fmt = d => d.toISOString().split('T')[0];
+  const today = new Date();
+  const last = new Date(today); last.setDate(last.getDate()-20);
+  document.getElementById('todayDate').value = fmt(today);
+  document.getElementById('lastDate').value = fmt(last);
+}
+
+initDates(); renderDrugs(); calc();
+</script>
+</body>
+</html>
