@@ -67,10 +67,6 @@
   .result-table th { font-size: 11px; font-weight: 600; color: var(--text2); padding: 7px 10px; border-bottom: 2px solid var(--border); text-align: left; white-space: nowrap; }
   .result-table td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   .result-table tr:last-child td { border-bottom: none; }
-  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
-  .badge-ok { background: var(--green-bg); color: var(--green-text); }
-  .badge-warn { background: var(--amber-bg); color: var(--amber-text); }
-  .badge-low { background: var(--red-bg); color: var(--red-text); }
   .ftu-tag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 10px; background: var(--green-bg); color: var(--green-text); margin: 1px 2px 1px 0; }
 
   .rx-cell { line-height: 1.6; }
@@ -79,9 +75,6 @@
   .rx-cell .final { display: flex; align-items: baseline; gap: 4px; margin-top: 3px; }
   .rx-cell .final .gv { font-size: 19px; font-weight: 700; color: var(--teal); }
   .rx-cell .final .bv { font-size: 11px; color: var(--text3); }
-
-  .bar-wrap { width: 56px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 4px; }
-  .bar-fill { height: 100%; border-radius: 3px; }
 
   .rx-box { margin-top: 14px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
   .rx-head { background: var(--surface2); padding: 9px 14px; font-size: 12px; font-weight: 600; color: var(--text2); }
@@ -383,21 +376,18 @@ function calc(){
 
   const rxItems=[];
   let tbl=`<div style="overflow-x:auto"><table class="result-table">
-  <tr><th>薬剤</th><th>1日消費</th><th>塗布部位・FTU</th><th>次回必要量</th><th>残量</th><th>今回処方量</th><th>使用率</th></tr>`;
+  <tr><th>薬剤</th><th>1日消費</th><th>塗布部位・FTU</th><th>次回必要量</th><th>残量</th><th>今回処方量</th></tr>`;
 
   drugs.forEach(d=>{
     const pname=getDrugName(d);
     const consumedG=d.givenG-d.remainG;
-    if(consumedG<0){tbl+=`<tr><td><strong>${pname}</strong></td><td colspan="6"><span class="badge badge-warn">残量が処方量を超えています</span></td></tr>`;return;}
+    if(consumedG<0){tbl+=`<tr><td><strong>${pname}</strong></td><td colspan="5"><span class="badge badge-warn">残量が処方量を超えています</span></td></tr>`;return;}
     const perDayG=consumedG/days;
     const ftuG=calcFTU(d,ak,nextDays);
     const hasFTU=PARTS.some(p=>d.parts[p.key].checked);
     const neededG=hasFTU?ftuG:perDayG*nextDays;
     const netG=Math.max(0,neededG-d.remainG);
     const ru=roundUpTube(netG,d.tubeg);
-    const useRate=d.givenG>0?Math.round(consumedG/d.givenG*100):0;
-    const barColor=useRate>90?'#1d9e75':useRate>50?'#b87515':'#c0392b';
-    const bdg=useRate>90?'<span class="badge badge-ok">よく使用</span>':useRate>50?'<span class="badge badge-warn">中程度</span>':'<span class="badge badge-low">使用少</span>';
     const ptags=PARTS.filter(p=>d.parts[p.key].checked).map(p=>{
       const s=p.bilateral?(d.parts[p.key].sides===2?'両':'片'):'';
       return`<span class="ftu-tag">${p.label}${s?`(${s})`:''}</span>`;
@@ -417,8 +407,6 @@ function calc(){
       <td>${neededG.toFixed(1)}g<br><span style="font-size:11px;color:var(--text3);">${d.tubeg>0?(neededG/d.tubeg).toFixed(1)+'本':''}</span></td>
       <td>${d.remainG.toFixed(1)}g<br><span style="font-size:11px;color:var(--text3);">${d.tubeg>0?(d.remainG/d.tubeg).toFixed(1)+'本':''}</span></td>
       <td>${rxCell}</td>
-      <td>${bdg}<div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(useRate,100)}%;background:${barColor};"></div></div>
-          <span style="font-size:11px;color:var(--text3);">${useRate}%</span></td>
     </tr>`;
     rxItems.push({
       name:pname,tubeg:d.tubeg,givenG:d.givenG,remainG:d.remainG,
