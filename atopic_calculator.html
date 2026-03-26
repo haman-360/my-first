@@ -643,33 +643,164 @@ function buildPatientText(){
   return txt.trim();
 }
 
+// ============================================================
+// 自己完結型QRコード生成（外部依存なし）
+// Reed-Solomon + QR Matrix (Version 1-10, Byte mode, UTF-8)
+// ============================================================
+const QRGen=(()=>{
+  // GF(256) tables
+  const EXP=new Uint8Array(512),LOG=new Uint8Array(256);
+  (()=>{let x=1;for(let i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&256)x^=285;}for(let i=255;i<512;i++)EXP[i]=EXP[i-255];})();
+  const gfMul=(a,b)=>a&&b?EXP[LOG[a]+LOG[b]]:0;
+  const gfPoly=(n)=>{let p=[1];for(let i=0;i<n;i++){const q=[1,EXP[i]];const r=new Uint8Array(p.length+1);for(let a=0;a<p.length;a++)for(let b=0;b<q.length;b++)r[a+b]^=gfMul(p[a],q[b]);p=Array.from(r);}return p;};
+  const rsEncode=(data,n)=>{const g=gfPoly(n);const out=new Uint8Array(data.length+n);data.forEach((v,i)=>out[i]=v);for(let i=0;i<data.length;i++){const c=out[i];if(c)for(let j=0;j<g.length;j++)out[i+j]^=gfMul(g[j],c);}return Array.from(out.slice(data.length));};
+
+  // Version/EC config [version, ecBlocks, dataBytes, ecBytesPerBlock, size]
+  const VCFG={
+    1:[1,19,7,21],2:[1,34,10,25],3:[1,55,15,29],4:[1,80,20,33],
+    5:[1,108,26,37],6:[2,68,18,41],7:[2,78,20,45],8:[2,97,24,49],
+    9:[2,116,30,53],10:[2,136,18,57]
+  };
+  // get version for byte count
+  function pickVersion(n){
+    for(let v=1;v<=10;v++){const c=VCFG[v];const cap=c[0]*c[1];if(n<=cap)return v;}return null;
+  }
+
+  // encode string to UTF-8 bytes
+  function toUTF8(str){
+    return Array.from(new TextEncoder().encode(str));
+  }
+
+  // alignment pattern positions
+  const ALIGN={2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50]};
+
+  function buildMatrix(version){
+    const size=17+4*version;
+    const m=Array.from({length:size},()=>new Array(size).fill(-1)); // -1=unset
+    // finder pattern
+    const finder=(r,c)=>{for(let dr=-1;dr<=7;dr++)for(let dc=-1;dc<=7;dc++){const nr=r+dr,nc=c+dc;if(nr<0||nr>=size||nc<0||nc>=size)continue;const inR=dr>=0&&dr<=6,inC=dc>=0&&dc<=6;const b=(dr===0||dr===6||dc===0||dc===6)?1:((dr>=2&&dr<=4&&dc>=2&&dc<=4)?1:0);m[nr][nc]=b;}};
+    finder(0,0);finder(0,size-7);finder(size-7,0);
+    // timing
+    for(let i=8;i<size-8;i++){m[6][i]=m[i][6]=(i%2===0)?1:0;}
+    // dark module
+    m[4*version+9][8]=1;
+    // alignment
+    if(version>=2){const pos=ALIGN[version];for(let i=0;i<pos.length;i++)for(let j=0;j<pos.length;j++){const r=pos[i],c=pos[j];if(m[r][c]!==-1)continue;for(let dr=-2;dr<=2;dr++)for(let dc=-2;dc<=2;dc++)m[r+dr][c+dc]=(Math.abs(dr)===2||Math.abs(dc)===2)?1:(dr===0&&dc===0)?1:0;}}
+    // format reserve
+    for(let i=0;i<=8;i++){if(m[i][8]===-1)m[i][8]=0;if(m[8][i]===-1)m[8][i]=0;}
+    m[size-8][8]=0;for(let i=size-7;i<size;i++)m[8][i]=0;
+    return m;
+  }
+
+  function placeData(m,bits){
+    const size=m.length;let idx=0;
+    for(let col=size-1;col>=1;col-=2){
+      if(col===6)col=5;
+      for(let row=0;row<size;row++){
+        const r=(Math.floor((size-1-col)/2)%2===0)?row:size-1-row;
+        for(let x=0;x<2;x++){
+          const c=col-x;
+          if(m[r][c]===-1){m[r][c]=(idx<bits.length)?bits[idx]:0;idx++;}
+        }
+      }
+    }
+  }
+
+  // mask pattern 0: (i+j)%2===0
+  function applyMask(m){
+    const size=m.length;
+    const masked=m.map(r=>[...r]);
+    for(let r=0;r<size;r++)for(let c=0;c<size;c++)if(m[r][c]!==-1&&(r+c)%2===0)masked[r][c]^=1;
+    return masked;
+  }
+
+  // format bits for EC=M(01), mask=0 → bits=101010000010010 (pre-computed with BCH+XOR mask 101010000010010)
+  const FMT_BITS=[1,0,1,0,1,0,0,0,0,0,1,0,0,1,0];
+  function writeFormat(m){
+    const size=m.length;
+    for(let i=0;i<6;i++){m[i][8]=FMT_BITS[i];m[8][size-1-i]=FMT_BITS[i];}
+    m[7][8]=FMT_BITS[6];m[8][size-8]=FMT_BITS[6];
+    m[8][8]=FMT_BITS[7];m[size-7][8]=FMT_BITS[7];
+    for(let i=8;i<15;i++){m[size-15+i][8]=FMT_BITS[i];m[8][14-i+size-14-1]=FMT_BITS[i];}
+    // simpler: known pattern for M/mask0
+    const fp=[1,0,1,0,1,0,0,0,0,0,1,0,0,1,0];
+    for(let i=0;i<8;i++){m[i][8]=fp[i];if(i!==6)m[8][7-i]=fp[i];}
+    m[8][8]=fp[7];
+    for(let i=8;i<15;i++){m[size-15+i][8]=fp[i];m[8][size-15+i]=fp[i];}
+  }
+
+  function generate(text){
+    const bytes=toUTF8(text);
+    const version=pickVersion(bytes.length);
+    if(!version)return null;
+    const[ecBlocks,dataPerBlock,ecPerBlock]=VCFG[version].slice(1);
+    // build data codewords
+    const bits=[];
+    // mode = byte (0100)
+    [0,1,0,0].forEach(b=>bits.push(b));
+    // char count (8 bits for version 1-9)
+    for(let i=7;i>=0;i--)bits.push((bytes.length>>i)&1);
+    bytes.forEach(b=>{for(let i=7;i>=0;i--)bits.push((b>>i)&1);});
+    // terminator
+    for(let i=0;i<4&&bits.length<dataPerBlock*ecBlocks*8;i++)bits.push(0);
+    while(bits.length%8)bits.push(0);
+    // pad bytes
+    const PAD=[0xEC,0x11];let pi=0;
+    while(bits.length<dataPerBlock*ecBlocks*8){const p=PAD[pi%2];pi++;for(let i=7;i>=0;i--)bits.push((p>>i)&1);}
+    // bytes
+    const cw=[];for(let i=0;i<bits.length;i+=8){let v=0;for(let j=0;j<8;j++)v=(v<<1)|bits[i+j];cw.push(v);}
+    // split into blocks and compute EC
+    const allData=[],allEC=[];
+    for(let b=0;b<ecBlocks;b++){
+      const block=cw.slice(b*dataPerBlock,(b+1)*dataPerBlock);
+      allData.push(block);allEC.push(rsEncode(block,ecPerBlock));
+    }
+    // interleave
+    const final=[];
+    for(let i=0;i<dataPerBlock;i++)allData.forEach(b=>{if(i<b.length)final.push(b[i]);});
+    for(let i=0;i<ecPerBlock;i++)allEC.forEach(b=>{if(i<b.length)final.push(b[i]);});
+    // to bits
+    const finalBits=[];
+    final.forEach(b=>{for(let i=7;i>=0;i--)finalBits.push((b>>i)&1);});
+    // remainder bits
+    const REM=[0,7,7,7,7,7,0,0,0,0,0];
+    for(let i=0;i<(REM[version]||0);i++)finalBits.push(0);
+
+    const mat=buildMatrix(version);
+    placeData(mat,finalBits);
+    const masked=applyMask(mat);
+    writeFormat(masked);
+    return masked;
+  }
+
+  function render(text,canvas,moduleSize=5,margin=4){
+    const mat=generate(text);
+    if(!mat){canvas.width=220;canvas.height=220;return;}
+    const n=mat.length;
+    const px=(n+margin*2)*moduleSize;
+    canvas.width=px;canvas.height=px;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,px,px);
+    ctx.fillStyle='#0f6e56';
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++)
+      if(mat[r][c])ctx.fillRect((c+margin)*moduleSize,(r+margin)*moduleSize,moduleSize,moduleSize);
+  }
+  return{render};
+})();
+
 function showQR(){
   renderPatientCard();
   const text=buildPatientText();
   const wrap=document.getElementById('qr-canvas-wrap');
   wrap.innerHTML='';
+  const canvas=document.createElement('canvas');
+  wrap.appendChild(canvas);
+  try{
+    QRGen.render(text,canvas,5,4);
+  }catch(e){
+    wrap.innerHTML=`<p style="font-size:12px;color:var(--text2);padding:8px;">QR生成に失敗しました。テキスト出力タブからコピーしてください。</p>`;
+  }
   document.getElementById('qr-area').style.display='block';
-
-  // Encode text as UTF-8 bytes then to percent-encoding for data URI
-  // Use QR via a free API that returns an image (no JS library needed)
-  const encoded=encodeURIComponent(text);
-  // Use Google Charts QR API (works offline-ish via HTTPS, no key needed)
-  const size=220;
-  const url=`https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encoded}&choe=UTF-8&chld=M|1`;
-  const img=document.createElement('img');
-  img.width=size; img.height=size;
-  img.alt='QRコード';
-  img.style.display='block';
-  img.onerror=()=>{
-    // fallback: show text to copy manually
-    wrap.innerHTML=`<div style="padding:12px;max-width:260px;">
-      <p style="font-size:12px;color:var(--text2);margin-bottom:8px;">QR生成にはインターネット接続が必要です。<br>以下のテキストをコピーしてお渡しください。</p>
-      <textarea style="width:100%;height:160px;font-size:12px;line-height:1.7;padding:8px;border:1px solid var(--border);border-radius:6px;resize:none;" readonly>${text}</textarea>
-      <button class="btn btn-green btn-sm" style="margin-top:8px;" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.querySelector('#qr-canvas-wrap textarea').value)">コピー</button>
-    </div>`;
-  };
-  img.src=url;
-  wrap.appendChild(img);
 }
 
 function printPatient(){
