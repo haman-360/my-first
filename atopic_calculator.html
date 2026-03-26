@@ -245,7 +245,7 @@ function newDrug(pi=0){
          givenG:PRESETS[pi].tubeg*4,remainG:0,freqIdx:0,parts};
 }
 const drugs=[newDrug(0)];
-drugs[0].givenG=28*8; drugs[0].remainG=1.5*28;
+drugs[0].givenG=28*1; drugs[0].remainG=0;
 
 function getDrugName(d){return PRESETS[d.preset].custom?(d.customName||'（薬剤名未入力）'):PRESETS[d.preset].name;}
 function toB(g,tg){return tg>0?+(g/tg).toFixed(2):'—';}
@@ -540,11 +540,9 @@ function showCopied(){
 function initDates(){
   const fmt=d=>d.toISOString().split('T')[0];
   const today=new Date();
-  const last=new Date(today);last.setDate(last.getDate()-20);
-  const next=new Date(today);next.setDate(next.getDate()+28);
   document.getElementById('todayDate').value=fmt(today);
-  document.getElementById('lastDate').value=fmt(last);
-  document.getElementById('nextDate').value=fmt(next);
+  document.getElementById('lastDate').value='';
+  document.getElementById('nextDate').value='';
 }
 function renderPatientCard(){
   const nv=document.getElementById('nextDate').value;
@@ -552,11 +550,15 @@ function renderPatientCard(){
   const ageKey=document.getElementById('globalAge').value;
   const el=document.getElementById('patient-card');
   if(!drugs.length){el.innerHTML='<p style="font-size:13px;color:var(--text2);">薬剤を入力してください。</p>';return;}
+  const pid=document.getElementById('patientId').value;
+  const tv=document.getElementById('todayDate').value;
   const nextStr=nv?`次回受診: ${nv}${nextDays>0?'（'+nextDays+'日後）':''}`:'';
+  const metaStr=[pid?`ID: ${pid}`:'', tv?`受診日: ${tv}`:''].filter(Boolean).join('　');
   let html=`<div class="pt-card">
     <div class="pt-header">
       <h2>軟膏の使い方　はまこどもクリニック</h2>
-      <p>${nextStr}</p>
+      <p style="margin-bottom:${nextStr?'2px':'0'}">${metaStr}</p>
+      ${nextStr?`<p>${nextStr}</p>`:''}
     </div>`;
   drugs.forEach((d,i)=>{
     const name=getDrugName(d);
@@ -611,12 +613,8 @@ function renderPatientCard(){
 }
 
 function buildPatientText(){
-  const nv=document.getElementById('nextDate').value;
-  const nextDays=dateDiff(document.getElementById('todayDate').value,nv);
   const ageKey=document.getElementById('globalAge').value;
-  let txt='【はまこどもクリニック 軟膏の使い方】\n';
-  if(nv)txt+=`次回受診: ${nv}${nextDays>0?'（'+nextDays+'日後）':''}\n`;
-  txt+='\n';
+  let txt='';
   drugs.forEach((d,i)=>{
     const name=getDrugName(d);
     const freq=FREQS[d.freqIdx].label;
@@ -638,7 +636,7 @@ function buildPatientText(){
       const dayTotal=onceTotal*freqVal;
       txt+=`   → 1回合計 ${onceTotal.toFixed(1)}g、1日合計 ${dayTotal.toFixed(1)}g\n`;
     }
-    txt+='\n';
+    if(i<drugs.length-1)txt+='\n';
   });
   return txt.trim();
 }
